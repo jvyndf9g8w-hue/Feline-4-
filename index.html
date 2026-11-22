@@ -1176,6 +1176,10 @@ svg.addEventListener('pointercancel',endDrag);
 var v3=false,camName='behind',camT=0;
 var cam={th:Math.PI,ph:.62,tx:30.5,ty:10,tz:.4,d:28,fov:.7};
 var c3=$('#c3d'),x3=c3.getContext('2d'),stage3=$('#stage');
+function mirV(v){var o={pos:{},ang:{},ball:Object.assign({},v.ball)},id;
+  for(id in v.pos)o.pos[id]=[v.pos[id][0],20-v.pos[id][1]];
+  if(v.ang)for(id in v.ang)o.ang[id]=typeof v.ang[id]==='number'?-v.ang[id]:v.ang[id];
+  o.ball.y=20-v.ball.y;return o;}
 var CAMS={top:{th:Math.PI,ph:1.5,k:1.18},behind:{th:Math.PI,ph:.6,k:.8},side:{th:-Math.PI/2,ph:.5,k:.88},match:{th:Math.PI*1.22,ph:.62,k:.78},goal:{th:0,ph:.5,k:.82},gk:{th:0,ph:.1,gk:1}};
 function camTarget(name){
   var c=CAMS[name]||CAMS.behind,full=S.mode==='full';
@@ -1326,7 +1330,7 @@ function draw3c(){
     });
   });
   /* état à afficher */
-  var v=anim?anim:frameView(S.frames[S.cur]);
+  var v=mirV(anim?anim:frameView(S.frames[S.cur]));
   var now=performance.now(),holdId=null,bp=v.ball,i;
   var bestD=.9;
   ALL.forEach(function(id){if(defHidden(id))return;var p=v.pos[id],d=Math.hypot(p[0]-bp.x,p[1]-bp.y);if(bp.h>.5&&d<bestD){bestD=d;holdId=id;}});
@@ -1337,7 +1341,7 @@ function draw3c(){
       if(defHidden(id))return;
       var p=fa.pos[id],q=fb.pos[id];if(Math.hypot(q[0]-p[0],q[1]-p[1])<.6)return;
       var kk=curveK(fb,id),pts=[],j;
-      for(j=0;j<=16;j++){var w=pathAt(p,q,kk,j/16);pts.push([w[0],w[1],.03]);}
+      for(j=0;j<=16;j++){var w=pathAt(p,q,kk,j/16);pts.push([w[0],20-w[1],.03]);}
       var col=IDS_A.indexOf(id)>=0?'#ff8fc2':'#d5e3f5';
       poly(pts,null,col,Math.max(2,.13*sT),[Math.max(4,.4*sT),Math.max(3,.28*sT)]);
       var l1=pts[15],l2=pts[16],dx=l2[0]-l1[0],dy=l2[1]-l1[1],dl=Math.hypot(dx,dy)||1;dx/=dl;dy/=dl;
@@ -1603,7 +1607,7 @@ function drawGL(){
   wall([-5,-5,0],[0,30,0],[0,0,5],[1,0,0]);wall([45,-5,0],[0,30,0],[0,0,5],[-1,0,0]);
   var nWall=cmdN;
   /* état */
-  var v=anim?anim:frameView(S.frames[S.cur]),now=performance.now(),holdId=null,bp=v.ball,bestD=.9;
+  var v=mirV(anim?anim:frameView(S.frames[S.cur])),now=performance.now(),holdId=null,bp=v.ball,bestD=.9;
   ALL.forEach(function(id){if(defHidden(id))return;var p=v.pos[id],d=Math.hypot(p[0]-bp.x,p[1]-bp.y);if(bp.h>.5&&d<bestD){bestD=d;holdId=id;}});
   /* trajets au sol */
   if(S.trails&&!playing&&!anim&&S.cur>0){
@@ -1612,7 +1616,7 @@ function drawGL(){
       if(defHidden(id))return;
       var p0=fa.pos[id],q0=fb.pos[id];if(Math.hypot(q0[0]-p0[0],q0[1]-p0[1])<.6)return;
       var kk=curveK(fb,id),pts=[],j,col=IDS_A.indexOf(id)>=0?'#ff9cc9':'#e3edf9';
-      for(j=0;j<=24;j++)pts.push(pathAt(p0,q0,kk,j/24));
+      for(j=0;j<=24;j++){var w0=pathAt(p0,q0,kk,j/24);pts.push([w0[0],20-w0[1]]);}
       for(j=0;j<24;j++){if(j%3===2)continue;var A=pts[j],B=pts[j+1],dx=B[0]-A[0],dy=B[1]-A[1],dl=Math.hypot(dx,dy)||1e-4,wd=.16;
         cm('quad',[dx*1.15,dy*1.15,0],[-dy/dl*wd,dx/dl*wd,0],[0,0,1],[A[0]+dy/dl*wd/2,A[1]-dx/dl*wd/2,.015],col,{lit:0,sh:0});}
       var l1=pts[22],l2=pts[24],dx2=l2[0]-l1[0],dy2=l2[1]-l1[1],dl2=Math.hypot(dx2,dy2)||1e-4,ux=dx2/dl2,uy=dy2/dl2;
