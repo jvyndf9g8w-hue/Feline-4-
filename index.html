@@ -193,6 +193,18 @@ body.vwork #vlibPanel{order:5}
 #fsVidCtl #fsVBtns .vb{flex:1 1 0;min-width:0!important;width:auto;height:36px;padding:0 1px;font-size:11px!important;letter-spacing:-.2px;white-space:nowrap;overflow:hidden}
 #fsVidCtl #fsVBtns .vb svg{width:20px;height:20px}
 #inkShot{display:none}
+.pathbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.pathbar .pb-l{font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.8em;opacity:.7}
+.pb-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pb-chips .chip{min-height:38px;padding:0 14px}
+.pb-chips .chip[aria-current=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+body.viewer #pathBar{display:none}
+.steps .chip.fk::after{content:'\2442';margin-left:3px;font-size:.9em;opacity:.8}
+.forkov{position:fixed;z-index:80;left:50%;top:22%;transform:translateX(-50%);display:grid;gap:10px;padding:14px 16px;background:var(--panel);color:var(--fg);border:2px solid var(--accent);border-radius:14px;box-shadow:0 10px 36px rgba(0,0,0,.45);max-width:min(92%,520px);text-align:center}
+.forkov[hidden]{display:none}
+.forkov .fk-t{font-weight:800;font-size:1.05em}
+.forkov .fk-b{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.forkov .fk-b .btn{min-height:50px;padding:0 18px;font-size:1.02em}
 .fstxt{position:absolute;z-index:9;top:30%;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:10px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
 .fstxt[hidden]{display:none}
 .fstxt input{min-width:min(280px,60vw);min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:17px;background:var(--bg);color:var(--fg)}
@@ -426,6 +438,7 @@ textarea{width:100%;min-height:84px;padding:10px 12px;border:1px solid var(--lin
       <button type="button" class="btn" id="fsCale">Caler début</button>
       <button type="button" class="btn" id="fsCale2">Caler fin</button>
       <button type="button" class="btn" id="fsSync" aria-pressed="true">Synchro</button>
+      <button type="button" class="btn" id="fsPath" hidden>Chemin</button>
       <button type="button" class="btn" data-x="AX" aria-pressed="false">+ Joueuse</button>
       <button type="button" class="btn" data-x="GX" aria-pressed="false">+ Gardienne</button>
       <button type="button" class="btn" id="fs3d" aria-pressed="false">3D</button>
@@ -442,6 +455,7 @@ textarea{width:100%;min-height:84px;padding:10px 12px;border:1px solid var(--lin
       <button type="button" class="btn" data-k="1" aria-pressed="false">Large droite</button>
       <button type="button" class="btn" id="pathOk">OK</button>
     </div>
+    <div class="forkov" id="forkOv" hidden><div class="fk-t" id="forkT">Choisis la suite</div><div class="fk-b" id="forkBtns"></div></div>
     <div class="fstxt" id="inkTxt" hidden><input id="inkTxtIn" type="text" maxlength="60" placeholder="Texte à écrire…" autocomplete="off"><button type="button" class="btn primary" id="inkTxtOk">OK</button><button type="button" class="btn" id="inkTxtNo">Annuler</button></div>
     <div class="fsink" id="fsInk" hidden>
       <button type="button" class="sw" data-c="#e53935" style="background:#e53935" aria-label="Rouge" aria-pressed="true"></button>
@@ -539,6 +553,14 @@ textarea{width:100%;min-height:84px;padding:10px 12px;border:1px solid var(--lin
   </section>
 
   <section class="panel deck" aria-label="Étapes et lecture">
+    <div class="pathbar" id="pathBar">
+      <span class="pb-l">Chemins</span>
+      <div class="pb-chips" id="pathChips" role="group" aria-label="Chemins"></div>
+      <button type="button" class="btn" id="pathNew" title="Crée un second chemin à partir de l'étape en cours">+ Variante à partir de l'étape</button>
+      <button type="button" class="btn" id="pathRen">Renommer</button>
+      <button type="button" class="btn danger" id="pathDel">Supprimer la variante</button>
+      <label class="check"><input type="checkbox" id="chkFork" checked> Proposer le choix pendant la lecture</label>
+    </div>
     <div class="steps" id="steps" role="group" aria-label="Étapes"></div>
     <div class="row">
       <button type="button" class="btn" id="btnAdd">+ Étape</button>
@@ -788,7 +810,7 @@ function load(){
 var saveTimer=0;
 function save(){
   if(VIEWER)return;
-  try{localStorage.setItem(KEY,JSON.stringify({mode:S.mode,defense:S.defense,defLabels:S.defLabels,frames:tmpBackup||S.frames,cur:S.cur,trails:S.trails,speed:S.speed,loop:S.loop,title:S.title,libId:S.libId,smooth:S.smooth,dt:S.dt||0,extra:S.extra,vt0:(S.vt0==null?null:S.vt0),vt1:(S.vt1==null?null:S.vt1)}));}catch(e){}
+  try{localStorage.setItem(KEY,JSON.stringify({mode:S.mode,defense:S.defense,defLabels:S.defLabels,frames:tmpBackup||S.frames,paths:(function(){pathsBind();return S.paths.length>1?S.paths:null;})(),pi:S.pi,forkAsk:S.forkAsk,cur:S.cur,trails:S.trails,speed:S.speed,loop:S.loop,title:S.title,libId:S.libId,smooth:S.smooth,dt:S.dt||0,extra:S.extra,vt0:(S.vt0==null?null:S.vt0),vt1:(S.vt1==null?null:S.vt1)}));}catch(e){}
 }
 function saveSoon(){clearTimeout(saveTimer);saveTimer=setTimeout(save,400);}
 
@@ -809,6 +831,7 @@ if(!S.extra||typeof S.extra!=='object')S.extra={AX:false,GX:false};
 function normExtras(){
   if(!S.extra)S.extra={AX:false,GX:false};
   var fs=S.frames.concat(typeof tmpBackup!=='undefined'&&tmpBackup?tmpBackup:[]);
+  (S.paths||[]).forEach(function(p){if(p&&p.frames)fs=fs.concat(p.frames);});
   fs.forEach(function(f){if(!f||!f.pos)return;for(var k in XD)if(!f.pos[k])f.pos[k]=XD[k].slice();});
 }
 normExtras();
@@ -816,6 +839,22 @@ if(!Array.isArray(S.defLabels)||S.defLabels.length!==6)S.defLabels=FORMS['0-6'].
 
 var svg=$('#board'), gHalf=$('#gHalf'), gFull=$('#gFull'), trailsG=$('#trails'), tokLayer=$('#tokens'), ballLayer=$('#ballLayer');
 var noteEl=$('#note'), hintEl=$('#hint'), stepsEl=$('#steps'), btnPlay=$('#btnPlay');
+function normPaths(){
+  if(!S.paths||!S.paths.length||!S.paths[S.pi]){S.paths=[{name:'Principal',parent:-1,from:-1,frames:S.frames}];S.pi=0;}
+}
+function pathsBind(){normPaths();S.paths[S.pi].frames=tmpBackup?tmpBackup:S.frames;}
+function pathsReset(){S.paths=null;S.pi=0;}
+function forkChoices(pi,i){
+  var P=S.paths||[];if(P.length<2||!P[pi])return [pi];
+  var set={},A=P[pi];set[pi]=1;
+  P.forEach(function(X,xi){
+    if(xi===pi||!X.frames||X.frames.length<=i)return;
+    if(X.parent===pi&&X.from===i)set[xi]=1;
+    if(A.parent>=0&&A.from===i){if(xi===A.parent)set[xi]=1;if(X.parent===A.parent&&X.from===i)set[xi]=1;}
+  });
+  return Object.keys(set).map(Number).sort(function(a,b){return a-b;});
+}
+if(S.paths&&S.paths[S.pi]&&Array.isArray(S.paths[S.pi].frames)&&S.paths[S.pi].frames.length)S.frames=S.paths[S.pi].frames;else{S.paths=null;S.pi=0;}
 var pathSel=null, curveDrag=null, fsEdit=false, fsLayout='schema', tmpBackup=null;
 function tempOk(){return fsOn&&!fsEdit&&fsLayout!=='vonly';}
 function tmpRestore(){
@@ -1028,9 +1067,61 @@ function renderSteps(){
     b.type='button';b.className='chip';b.textContent=String(i+1);
     b.setAttribute('aria-label','Étape '+(i+1)+' sur '+S.frames.length);
     if(i===S.cur)b.setAttribute('aria-current','step');
+    if(forkChoices(S.pi,i).length>1){b.className='chip fk';b.setAttribute('aria-label','Étape '+(i+1)+' : plusieurs chemins possibles');}
     b.addEventListener('click',function(){stop();setCur(i);refresh();});
     stepsEl.appendChild(b);
   });
+  renderPaths();
+}
+function renderPaths(){
+  var pc=$('#pathChips');if(!pc)return;
+  normPaths();
+  pc.innerHTML='';
+  S.paths.forEach(function(p,pi){
+    var b=document.createElement('button');b.type='button';b.className='chip';
+    b.textContent=p.name+(p.from>=0?' (dès l\'étape '+(p.from+1)+')':'');
+    b.setAttribute('aria-current',String(pi===S.pi));
+    b.addEventListener('click',function(){if(pi!==S.pi){stop();switchPath(pi);}});
+    pc.appendChild(b);
+  });
+  var del=$('#pathDel');if(del)del.disabled=(S.pi===0);
+  var fp=$('#fsPath');if(fp){fp.hidden=S.paths.length<2;fp.textContent='Chemin : '+S.paths[S.pi].name;}
+  var ck=$('#chkFork');if(ck)ck.checked=S.forkAsk!==false;
+}
+function switchPath(pi){
+  if(tmpBackup)tmpRestore();
+  pathsBind();
+  if(!S.paths[pi])return;
+  S.pi=pi;S.frames=S.paths[pi].frames;
+  if(S.cur>=S.frames.length)S.cur=S.frames.length-1;
+  setCur(S.cur,true);refresh();save();
+}
+var forkSeen='',forkLastI=0;
+function hideFork(){var o=$('#forkOv');if(o)o.hidden=true;}
+function showFork(fi,list){
+  var o=$('#forkOv'),bx=$('#forkBtns');if(!o||!bx)return;
+  $('#forkT').textContent='Étape '+(fi+1)+' : choisis la suite';
+  bx.innerHTML='';
+  list.forEach(function(pi){
+    var b=document.createElement('button');b.type='button';b.className='btn'+(pi===S.pi?' primary':'');
+    b.textContent=S.paths[pi].name+(pi===S.pi?' (suite actuelle)':'');
+    b.addEventListener('click',function(){forkPick(pi);});
+    bx.appendChild(b);
+  });
+  o.hidden=false;
+}
+function askFork(fi,list,pos){
+  forkSeen=S.pi+':'+fi;
+  cancelAnimationFrame(raf);playing=false;pausedAt=pos;
+  anim=frameView(S.frames[fi]);setCur(fi,true);update();playUI();showFork(fi,list);
+}
+function forkPick(pi){
+  hideFork();
+  if(pi!==S.pi)switchPath(pi);
+  var fi=S.cur;
+  if(fi>=S.frames.length-1){anim=null;pausedAt=0;playFrom=0;setCur(fi);playUI();refresh();return;}
+  playFrom=fi;anim=frameView(S.frames[fi]);pausedAt=0;forkSeen=S.pi+':'+fi;forkLastI=0;
+  playing=true;playUI();t0=performance.now();raf=requestAnimationFrame(tick);
 }
 function setCur(k,keep){
   if(tmpBackup&&!keep)tmpRestore();
@@ -1061,10 +1152,19 @@ function tick(now){
   var n=S.frames.length-pf,segLen=H+Mm,total=(n-1)*segLen+H;
   var e=Math.max(0,(now-t0)*S.speed);
   if(e>=total){
-    if(S.loop){t0=now;e=0;}
-    else{finish();return;}
+    if(S.loop){t0=now;e=0;forkSeen='';forkLastI=0;}
+    else{
+      var lf=S.frames.length-1,lk=S.pi+':'+lf;
+      if(S.forkAsk!==false&&forkSeen!==lk){var lc=forkChoices(S.pi,lf);if(lc.length>1){askFork(lf,lc,total-1);return;}}
+      finish();return;
+    }
   }
   var i=Math.min(Math.floor(e/segLen),n-1),u=e-i*segLen,step=i;
+  if(i!==forkLastI){
+    forkLastI=i;
+    var fi0=i+pf,fk0=S.pi+':'+fi0;
+    if(S.forkAsk!==false&&i>0&&i<n-1&&forkSeen!==fk0){var fc0=forkChoices(S.pi,fi0);if(fc0.length>1){askFork(fi0,fc0,i*segLen+1);return;}}
+  }
   if(i<n-1&&u>=H){
     step=i+1;
     var uu=(u-H)/Mm;
@@ -1077,14 +1177,14 @@ function tick(now){
 }
 function play(){
   if(S.frames.length<2){hint("Ajoute une deuxième étape avec « + Étape » pour lancer la lecture.");return;}
-  hint('');
+  hint('');hideFork();
   if(pathSel)closePath();
   var resume=!!anim&&!playing;
   playing=true;
   if(!resume){
     // en double fenêtre : la lecture reprend à l'étape en cours (position éventuellement modifiée) puis passe à l'étape suivante
     var pf0=(tempOk()&&S.cur<S.frames.length-1)?S.cur:0;
-    playFrom=pf0;
+    playFrom=pf0;forkSeen='';forkLastI=0;
     if(pf0!==S.cur)setCur(pf0);
     anim=frameView(S.frames[pf0]);pausedAt=0;
   }
@@ -1097,6 +1197,7 @@ function pause(){
   cancelAnimationFrame(raf);playing=false;playUI();
 }
 function stop(){
+  hideFork();
   if(!playing&&!anim)return;
   pausedAt=0;playFrom=0;
   if(tmpBackup)tmpRestore();
@@ -1946,10 +2047,41 @@ $('#btnDel').addEventListener('click',function(){
   setCur(Math.min(S.cur,S.frames.length-1));refresh();save();hint('');
 });
 btnPlay.addEventListener('click',function(){if(playing)pause();else play();});
+$('#pathNew').addEventListener('click',function(){
+  stop();normPaths();pathsBind();
+  var from=S.cur,n=S.paths.filter(function(p){return p.parent>=0;}).length+1;
+  S.paths.push({name:'Variante '+n,parent:S.pi,from:from,frames:clone(S.frames)});
+  switchPath(S.paths.length-1);
+  hint('Variante créée à partir de l\u2019étape '+(from+1)+' : modifie les étapes suivantes (ou ajoutes-en). À la lecture, le choix sera proposé à l\u2019étape '+(from+1)+'.');
+});
+$('#pathRen').addEventListener('click',function(){
+  normPaths();
+  inkAsk(function(t){if(t&&t.trim()){S.paths[S.pi].name=t.trim().slice(0,30);renderPaths();renderSteps();save();}},'Nom du chemin');
+});
+var pathDelBtn=$('#pathDel'),pathDelT=0;
+pathDelBtn.addEventListener('click',function(){
+  if(S.pi===0)return;
+  if(pathDelBtn.getAttribute('data-armed')!=='1'){
+    pathDelBtn.setAttribute('data-armed','1');pathDelBtn.textContent='Confirmer';
+    pathDelT=setTimeout(function(){pathDelBtn.removeAttribute('data-armed');pathDelBtn.textContent='Supprimer la variante';},3000);return;
+  }
+  clearTimeout(pathDelT);pathDelBtn.removeAttribute('data-armed');pathDelBtn.textContent='Supprimer la variante';
+  stop();pathsBind();
+  var rm={};rm[S.pi]=1;var ch=true;
+  while(ch){ch=false;S.paths.forEach(function(p,i){if(!rm[i]&&rm[p.parent]){rm[i]=1;ch=true;}});}
+  var par=S.paths[S.pi].parent,map={},np=[];
+  S.paths.forEach(function(p,i){if(!rm[i]){map[i]=np.length;np.push(p);}});
+  np.forEach(function(p){p.parent=p.parent>=0?map[p.parent]:-1;});
+  S.paths=np;S.pi=map[par]!=null?map[par]:0;S.frames=S.paths[S.pi].frames;
+  if(S.cur>=S.frames.length)S.cur=S.frames.length-1;
+  setCur(S.cur,true);refresh();save();hint('Variante supprimée.');
+});
+$('#chkFork').addEventListener('change',function(){S.forkAsk=this.checked;save();});
+$('#fsPath').addEventListener('click',function(){normPaths();stop();switchPath((S.pi+1)%S.paths.length);});
 noteEl.addEventListener('input',function(){S.frames[S.cur].note=noteEl.value;saveSoon();});
 $('#btnExample').addEventListener('click',function(){
   stop();
-  S.dt=0;S.frames=exampleFrames();S.defense='0-6';S.defLabels=FORMS['0-6'].lab.slice();
+  S.dt=0;S.frames=exampleFrames();pathsReset();S.defense='0-6';S.defLabels=FORMS['0-6'].lab.slice();
   $('#selDef').value='0-6';S.libId=null;S.title='Exemple : croisé DC / ARG sur 0-6';syncTitle();renderLib();setCur(0);refresh();save();hint("Exemple rechargé. Lance la lecture pour le voir tourner.");
 });
 var clearBtn=$('#btnClear'),clearTimer=0;
@@ -1961,7 +2093,7 @@ clearBtn.addEventListener('click',function(){
   }
   clearTimeout(clearTimer);clearBtn.removeAttribute('data-armed');clearBtn.textContent='Tout effacer';
   stop();
-  S.dt=0;S.frames=[baseFrame(S.defense)];
+  S.dt=0;S.frames=[baseFrame(S.defense)];pathsReset();
   if(S.defense!=='none')S.defLabels=FORMS[S.defense].lab.slice();
   S.libId=null;S.title='';syncTitle();renderLib();setCur(0);refresh();save();hint('Terrain remis en place avec une seule étape.');
 });
@@ -2005,8 +2137,9 @@ function inkPt(e){var r=pt(e);return Math.round(r[0]*100)/100+','+Math.round(r[1
 var inkTool='free';
 function mk(tag,attrs){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);return e;}
 var inkAskCb=null;
-function inkAsk(cb){
+function inkAsk(cb,ph){
   var box=$('#inkTxt'),inp=$('#inkTxtIn');
+  inp.placeholder=ph||'Texte à écrire…';
   inkAskCb=cb;inp.value='';box.hidden=false;setTimeout(function(){try{inp.focus();}catch(_){}},50);
 }
 function inkAskEnd(ok){
@@ -2202,7 +2335,7 @@ function writeLib(){
 }
 function byId(id){for(var i=0;i<LIB.length;i++){if(LIB[i].id===id)return LIB[i];}return null;}
 function snapshot(title,id){
-  return {id:id||uid(),title:title,mode:S.mode,defense:S.defense,defLabels:S.defLabels.slice(),frames:clone(S.frames),updated:Date.now(),locked:false,dt:S.dt||0,vt0:(S.vt0==null?null:S.vt0),vt1:(S.vt1==null?null:S.vt1)};
+  return {id:id||uid(),title:title,mode:S.mode,defense:S.defense,defLabels:S.defLabels.slice(),frames:clone(S.frames),paths:(function(){pathsBind();return S.paths.length>1?clone(S.paths):null;})(),pi:S.pi,updated:Date.now(),locked:false,dt:S.dt||0,vt0:(S.vt0==null?null:S.vt0),vt1:(S.vt1==null?null:S.vt1)};
 }
 function syncTitle(){titleIn.value=S.title||'';}
 function fmtDate(ts){try{return new Date(ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}catch(e){return '';}}
@@ -2277,7 +2410,7 @@ function openEntry(id){
   S.mode=e.mode==='full'?'full':'half';
   S.defense=e.defense||'0-6';
   S.defLabels=(e.defLabels&&e.defLabels.length===6)?e.defLabels.slice():FORMS['0-6'].lab.slice();
-  S.frames=clone(e.frames);S.libId=e.id;S.title=e.title;S.dt=+e.dt||0;S.vt0=(typeof e.vt0==='number')?e.vt0:null;S.vt1=(typeof e.vt1==='number')?e.vt1:null;
+  S.frames=clone(e.frames);pathsReset();if(e.paths&&e.paths.length>1&&e.paths[e.pi||0]&&e.paths[e.pi||0].frames){S.paths=clone(e.paths);S.pi=e.pi||0;S.frames=S.paths[S.pi].frames;}S.libId=e.id;S.title=e.title;S.dt=+e.dt||0;S.vt0=(typeof e.vt0==='number')?e.vt0:null;S.vt1=(typeof e.vt1==='number')?e.vt1:null;
   $('#selDef').value=S.defense;syncTitle();setMode();setCur(0);refresh();save();renderLib();syncEditUI();
   hint("« "+e.title+" » ouverte. Tes modifications ne sont enregistrées dans la bibliothèque qu'avec « Mettre à jour ».");
   libHint('');
@@ -2319,7 +2452,7 @@ $('#btnSaveCopy').addEventListener('click',function(){
   writeLib();save();renderLib();libHint('Copie « '+t+' » ajoutée à la bibliothèque.');
 });
 $('#btnNew').addEventListener('click',function(){
-  stop();S.dt=0;S.frames=[baseFrame(S.defense)];S.libId=null;S.title='';
+  stop();S.dt=0;S.frames=[baseFrame(S.defense)];pathsReset();S.libId=null;S.title='';
   syncTitle();setCur(0);refresh();save();renderLib();
   libHint("Nouvelle action vide. Donne-lui un titre, construis-la, puis enregistre-la.");
   try{$('#stage').scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}
@@ -3787,7 +3920,7 @@ document.addEventListener('vidloaded',function(){
   });
   $('#manNew').addEventListener('click',function(){
     stop();var f=manFrame();
-    S.dt=0;S.frames=[f];S.libId=null;S.title='Vidéo '+fmt(mt);syncTitle();setCur(0);renderLib();
+    S.dt=0;S.frames=[f];pathsReset();S.libId=null;S.title='Vidéo '+fmt(mt);syncTitle();setCur(0);renderLib();
     manClose('Nouvelle séquence créée depuis la vidéo. Ajoute les moments suivants avec « Convertir » puis « Pointage manuel ».');
   });
 })();
